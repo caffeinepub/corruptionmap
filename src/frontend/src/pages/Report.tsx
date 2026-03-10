@@ -15,7 +15,6 @@ import { useNavigate } from "@tanstack/react-router";
 import {
   AlertTriangle,
   Check,
-  Clock,
   Copy,
   ImagePlus,
   Loader2,
@@ -158,14 +157,10 @@ export default function Report() {
               <h2 className="font-display font-bold text-2xl text-foreground mb-2">
                 Report Submitted Anonymously
               </h2>
-              <p className="text-muted-foreground mb-2">
-                Your report has been securely recorded and is pending admin
-                review.
+              <p className="text-muted-foreground mb-6">
+                Your report has been securely recorded and is now publicly
+                visible.
               </p>
-              <div className="flex items-center justify-center gap-2 mb-6 text-sm text-amber-400/80">
-                <Clock className="w-4 h-4" />
-                <span>It will appear publicly once approved.</span>
-              </div>
 
               {/* Token display */}
               <div
@@ -233,17 +228,6 @@ export default function Report() {
                     Anonymous Submission
                   </span>
                   {" — "}your identity is never stored or transmitted.
-                </span>
-              </div>
-
-              {/* Pending review notice */}
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/5 border border-amber-500/20">
-                <Clock className="w-4 h-4 text-amber-400 shrink-0" />
-                <span className="text-xs text-muted-foreground">
-                  <span className="text-amber-400 font-medium">
-                    Review Required
-                  </span>
-                  {" — "}your report will be reviewed before appearing publicly.
                 </span>
               </div>
 

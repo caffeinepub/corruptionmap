@@ -58,10 +58,9 @@ actor {
   // Kept for stable variable compatibility with previous version (no longer actively used)
   var pendingReports : [Report] = [];
 
-  // Track admin principal directly - this is the sole source of truth for admin access
+  // Track admin principal directly
   var adminPrincipal : ?Principal = null;
 
-  // Safe admin check using adminPrincipal only (never traps)
   func callerIsAdmin(caller : Principal) : Bool {
     if (caller.isAnonymous()) { return false };
     switch (adminPrincipal) {
@@ -70,37 +69,23 @@ actor {
     };
   };
 
-  // Check if caller is admin
   public query ({ caller }) func checkCallerIsAdmin() : async Bool {
     callerIsAdmin(caller);
   };
 
-  // Claim admin: only works if no admin has been assigned yet via claimAdmin.
-  // Uses adminPrincipal as sole source of truth so it is unaffected by
-  // _initializeAccessControlWithSecret setting accessControlState.adminAssigned.
   public shared ({ caller }) func claimAdmin() : async Bool {
-    if (caller.isAnonymous()) {
-      return false;
-    };
+    if (caller.isAnonymous()) { return false };
     switch (adminPrincipal) {
-      case (?_) {
-        // Admin already claimed by someone
-        return false;
-      };
+      case (?_) { false };
       case (null) {
-        // First caller claims admin
         adminPrincipal := ?caller;
-        // Keep roles map in sync (add is upsert, safe to call even if already registered)
         accessControlState.userRoles.add(caller, #admin);
         accessControlState.adminAssigned := true;
-        return true;
+        true;
       };
     };
   };
 
-  // Check if admin has been claimed yet.
-  // Checks adminPrincipal directly so it is not confused by
-  // _initializeAccessControlWithSecret setting adminAssigned for regular users.
   public query func isAdminClaimed() : async Bool {
     switch (adminPrincipal) {
       case (?_) { true };
@@ -108,7 +93,7 @@ actor {
     };
   };
 
-  // Create a report
+  // Create a report - immediately approved, no review needed
   public shared ({ caller }) func createReport(department : Text, city : Text, corruptionType : Text, amount : Nat, description : Text, officerName : ?Text, photo : ?Storage.ExternalBlob) : async Report {
     let id = reportId;
     let report : Report = {
@@ -120,7 +105,7 @@ actor {
       officerName;
       corruptionType;
       createdAt = Time.now();
-      status = #pending;
+      status = #approved;  // Immediately public, no review step
       photo;
     };
 
@@ -129,46 +114,28 @@ actor {
     report;
   };
 
-  // Get a report by ID
-  public query ({ caller }) func getReport(id : Nat) : async ?Report {
-    switch (reports.get(id)) {
-      case (?report) {
-        if (report.status != #approved and not callerIsAdmin(caller)) {
-          Runtime.trap("Unauthorized: Only approved reports are publicly accessible");
-        };
-        ?report;
-      };
-      case (null) { null };
-    };
+  // Get a report by ID (public)
+  public query func getReport(id : Nat) : async ?Report {
+    reports.get(id);
   };
 
-  // Get all approved reports
-  public query ({ caller }) func getApprovedReports() : async [Report] {
+  // Get all approved reports (public)
+  public query func getApprovedReports() : async [Report] {
     reports.values().filter(func(report) { report.status == #approved }).toArray();
   };
 
-  // Get all reports (admin only)
-  public query ({ caller }) func getAllReports() : async [Report] {
-    if (not callerIsAdmin(caller)) {
-      Runtime.trap("Unauthorized: Only admins can get all reports");
-    };
+  // Get all reports (public - admin removed)
+  public query func getAllReports() : async [Report] {
     reports.values().toArray();
   };
 
-  // Get all pending reports (admin only)
-  public query ({ caller }) func getPendingReports() : async [Report] {
-    if (not callerIsAdmin(caller)) {
-      Runtime.trap("Unauthorized: Only admins can get all pending reports");
-    };
+  // Get all pending reports
+  public query func getPendingReports() : async [Report] {
     reports.values().filter(func(report) { report.status == #pending }).toArray();
   };
 
-  // Approve a report (admin only)
+  // Approve a report
   public shared ({ caller }) func approveReport(id : Nat) : async () {
-    if (not callerIsAdmin(caller)) {
-      Runtime.trap("Unauthorized: Only admins can approve reports");
-    };
-
     switch (reports.get(id)) {
       case (?report) {
         let updatedReport : Report = { report with status = #approved };
@@ -178,12 +145,8 @@ actor {
     };
   };
 
-  // Reject a report (admin only)
+  // Reject a report
   public shared ({ caller }) func rejectReport(id : Nat) : async () {
-    if (not callerIsAdmin(caller)) {
-      Runtime.trap("Unauthorized: Only admins can reject reports");
-    };
-
     switch (reports.get(id)) {
       case (?report) {
         let updatedReport : Report = { report with status = #rejected };
