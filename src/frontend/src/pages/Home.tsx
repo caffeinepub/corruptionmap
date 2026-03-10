@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   formatAmount,
   relativeTime,
-  useGetApprovedReports,
+  useGetAllReports,
 } from "@/hooks/useQueries";
 import { Link } from "@tanstack/react-router";
 import {
@@ -87,7 +87,7 @@ const SAMPLE_REPORTS = [
 ];
 
 export default function Home() {
-  const { data: reports, isLoading } = useGetApprovedReports();
+  const { data: reports, isLoading } = useGetAllReports();
 
   const displayReports =
     reports && reports.length > 0 ? reports : SAMPLE_REPORTS;

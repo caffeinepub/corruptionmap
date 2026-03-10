@@ -1,7 +1,6 @@
 import Footer from "@/components/Footer";
 import Nav from "@/components/Nav";
 import { Toaster } from "@/components/ui/sonner";
-import Admin from "@/pages/Admin";
 import Home from "@/pages/Home";
 import MapView from "@/pages/MapView";
 import Report from "@/pages/Report";
@@ -47,18 +46,8 @@ const mapRoute = createRoute({
   path: "/map",
   component: MapView,
 });
-const adminRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/admin",
-  component: Admin,
-});
 
-const routeTree = rootRoute.addChildren([
-  homeRoute,
-  reportRoute,
-  mapRoute,
-  adminRoute,
-]);
+const routeTree = rootRoute.addChildren([homeRoute, reportRoute, mapRoute]);
 const router = createRouter({ routeTree });
 
 declare module "@tanstack/react-router" {

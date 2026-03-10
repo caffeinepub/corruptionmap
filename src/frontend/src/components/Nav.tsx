@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { MapPin, Menu, ShieldAlert, X } from "lucide-react";
+import { MapPin, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 export default function Nav() {
@@ -34,14 +34,6 @@ export default function Nav() {
             className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-secondary transition-colors [&.active]:text-primary [&.active]:bg-primary/10"
           >
             Map View
-          </Link>
-          <Link
-            to="/admin"
-            data-ocid="nav.admin.link"
-            className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-secondary transition-colors [&.active]:text-primary [&.active]:bg-primary/10 flex items-center gap-1.5"
-          >
-            <ShieldAlert className="w-3.5 h-3.5" />
-            Admin
           </Link>
           <Link to="/report" data-ocid="nav.report.link">
             <Button size="sm" className="ml-2 font-medium">
@@ -79,15 +71,6 @@ export default function Nav() {
             className="px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-secondary transition-colors [&.active]:text-primary"
           >
             Map View
-          </Link>
-          <Link
-            to="/admin"
-            data-ocid="nav.admin.link"
-            onClick={() => setOpen(false)}
-            className="px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-secondary transition-colors [&.active]:text-primary flex items-center gap-1.5"
-          >
-            <ShieldAlert className="w-3.5 h-3.5" />
-            Admin
           </Link>
           <Link
             to="/report"
