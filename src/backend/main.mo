@@ -7,6 +7,7 @@ import Runtime "mo:core/Runtime";
 import Nat "mo:core/Nat";
 import Order "mo:core/Order";
 import Int "mo:core/Int";
+import Principal "mo:core/Principal";
 
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
@@ -57,22 +58,54 @@ actor {
   // Kept for stable variable compatibility with previous version (no longer actively used)
   var pendingReports : [Report] = [];
 
-  // Claim admin: only works if no admin has been assigned yet
+  // Track admin principal directly - this is the sole source of truth for admin access
+  var adminPrincipal : ?Principal = null;
+
+  // Safe admin check using adminPrincipal only (never traps)
+  func callerIsAdmin(caller : Principal) : Bool {
+    if (caller.isAnonymous()) { return false };
+    switch (adminPrincipal) {
+      case (?ap) { Principal.equal(caller, ap) };
+      case (null) { false };
+    };
+  };
+
+  // Check if caller is admin
+  public query ({ caller }) func checkCallerIsAdmin() : async Bool {
+    callerIsAdmin(caller);
+  };
+
+  // Claim admin: only works if no admin has been assigned yet via claimAdmin.
+  // Uses adminPrincipal as sole source of truth so it is unaffected by
+  // _initializeAccessControlWithSecret setting accessControlState.adminAssigned.
   public shared ({ caller }) func claimAdmin() : async Bool {
     if (caller.isAnonymous()) {
       return false;
     };
-    if (accessControlState.adminAssigned) {
-      return false;
+    switch (adminPrincipal) {
+      case (?_) {
+        // Admin already claimed by someone
+        return false;
+      };
+      case (null) {
+        // First caller claims admin
+        adminPrincipal := ?caller;
+        // Keep roles map in sync (add is upsert, safe to call even if already registered)
+        accessControlState.userRoles.add(caller, #admin);
+        accessControlState.adminAssigned := true;
+        return true;
+      };
     };
-    accessControlState.userRoles.add(caller, #admin);
-    accessControlState.adminAssigned := true;
-    true;
   };
 
-  // Check if admin has been claimed yet (public)
+  // Check if admin has been claimed yet.
+  // Checks adminPrincipal directly so it is not confused by
+  // _initializeAccessControlWithSecret setting adminAssigned for regular users.
   public query func isAdminClaimed() : async Bool {
-    accessControlState.adminAssigned;
+    switch (adminPrincipal) {
+      case (?_) { true };
+      case (null) { false };
+    };
   };
 
   // Create a report
@@ -100,7 +133,7 @@ actor {
   public query ({ caller }) func getReport(id : Nat) : async ?Report {
     switch (reports.get(id)) {
       case (?report) {
-        if (report.status != #approved and not AccessControl.isAdmin(accessControlState, caller)) {
+        if (report.status != #approved and not callerIsAdmin(caller)) {
           Runtime.trap("Unauthorized: Only approved reports are publicly accessible");
         };
         ?report;
@@ -116,7 +149,7 @@ actor {
 
   // Get all reports (admin only)
   public query ({ caller }) func getAllReports() : async [Report] {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+    if (not callerIsAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can get all reports");
     };
     reports.values().toArray();
@@ -124,7 +157,7 @@ actor {
 
   // Get all pending reports (admin only)
   public query ({ caller }) func getPendingReports() : async [Report] {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+    if (not callerIsAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can get all pending reports");
     };
     reports.values().filter(func(report) { report.status == #pending }).toArray();
@@ -132,7 +165,7 @@ actor {
 
   // Approve a report (admin only)
   public shared ({ caller }) func approveReport(id : Nat) : async () {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+    if (not callerIsAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can approve reports");
     };
 
@@ -147,7 +180,7 @@ actor {
 
   // Reject a report (admin only)
   public shared ({ caller }) func rejectReport(id : Nat) : async () {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+    if (not callerIsAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can reject reports");
     };
 

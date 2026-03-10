@@ -215,7 +215,8 @@ export default function Admin() {
 
   const handleLogin = async () => {
     await login();
-    queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+    // Invalidate everything so actor and admin status re-fetch with new identity
+    queryClient.invalidateQueries();
   };
 
   const handleClaimAdmin = async () => {
@@ -223,6 +224,9 @@ export default function Admin() {
       const success = await claimAdmin();
       if (success) {
         toast.success("Admin access claimed successfully!");
+        // Force refetch of admin status after claiming
+        await queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+        await queryClient.refetchQueries({ queryKey: ["isAdmin"] });
       } else {
         toast.error("Could not claim admin access.");
       }

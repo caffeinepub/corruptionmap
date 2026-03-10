@@ -47,41 +47,50 @@ function geometryToPath(geometry: {
   return "";
 }
 
-// Single continuous polygon for India's full claimed northern territory:
-// PoK + Shaksgam Valley + Aksai Chin, merged without any gap.
-// Coordinates trace the outer boundary clockwise (lng, lat).
+// Single seamless polygon tracing India's full claimed northern territory:
+// AJK → Gilgit-Baltistan → Shaksgam Valley → Aksai Chin → back via south boundary
+// Rendered BELOW the state GeoJSON layer so Indian-admin J&K shows on top.
 const NORTHERN_TERRITORY_COORDS: [number, number][] = [
-  // Western edge of PoK
-  [72.4, 36.2],
-  [72.8, 37.1],
-  [73.5, 37.6],
-  // Northern PoK, heading east into Shaksgam Valley
-  [74.6, 37.8],
-  [75.5, 37.4],
-  [76.3, 37.3],
-  [77.2, 37.1],
-  // Shaksgam / Trans-Karakoram Tract, continuing into Aksai Chin
-  [78.0, 36.8],
-  [79.2, 36.3],
-  [80.0, 36.1],
-  [81.0, 35.6],
-  // Eastern edge of Aksai Chin
-  [80.8, 34.6],
-  [79.8, 34.1],
-  // Southern boundary of Aksai Chin going west
-  [78.7, 34.2],
-  [78.0, 34.6],
-  // Connecting south of Shaksgam to southern PoK
-  [77.0, 34.9],
-  [76.0, 35.2],
-  [75.3, 35.5],
-  // Southern boundary of PoK going west
-  [74.4, 34.5],
-  [73.5, 34.0],
-  [73.0, 34.8],
-  [72.4, 35.5],
-  // Close polygon
-  [72.4, 36.2],
+  // === WEST SIDE: South → North along India-Pakistan LoC / international boundary ===
+  [73.9, 32.5], // SW start — near Jammu / LoC
+  [73.4, 32.9],
+  [72.7, 33.4],
+  [72.0, 33.9],
+  [71.7, 34.4],
+  [71.5, 35.0],
+  [71.8, 35.6],
+  [72.3, 36.1],
+  // === NORTH SIDE: Karakoram range going east ===
+  [73.0, 36.7],
+  [73.7, 37.1],
+  [74.4, 37.4],
+  [75.1, 37.6], // Shaksgam Valley west
+  [75.9, 37.5],
+  [76.7, 37.3],
+  [77.5, 37.1],
+  [78.2, 36.9], // Shaksgam → Aksai Chin north
+  [78.9, 36.7],
+  [79.5, 36.4],
+  [80.0, 36.0],
+  // === EAST SIDE: Aksai Chin east boundary going south ===
+  [80.5, 35.5],
+  [80.7, 35.0],
+  [80.6, 34.4],
+  [80.3, 33.9],
+  // === SOUTH SIDE: Continuous from Aksai Chin → Gilgit-Baltistan → PoK back to start ===
+  [79.7, 33.6],
+  [79.1, 33.5], // SE Aksai Chin
+  [78.5, 33.7],
+  [78.0, 34.0],
+  [77.4, 34.3],
+  [76.8, 34.6],
+  [76.1, 34.8],
+  [75.4, 34.9], // South Shaksgam / GB
+  [74.8, 34.6],
+  [74.2, 34.2],
+  [73.7, 33.7],
+  [73.4, 33.2],
+  [73.9, 32.5], // Close back to SW start
 ];
 
 function coordsToPath(coords: [number, number][]): string {
@@ -133,9 +142,9 @@ const CORRUPTION_COLORS: Record<string, string> = {
 };
 
 function getHeatmapColor(count: number): string {
-  if (count === 0) return "#1e3a5f";
-  if (count === 1) return "#7c3d00";
-  if (count === 2) return "#b45309";
+  if (count === 0) return "#e8f0f7";
+  if (count === 1) return "#fde68a";
+  if (count === 2) return "#fb923c";
   return "#dc2626";
 }
 
@@ -273,8 +282,6 @@ export default function MapView() {
     }
   }
 
-  const northernFill = viewMode === "heatmap" ? getHeatmapColor(0) : "#1e3a5f";
-
   return (
     <div className="min-h-full">
       <section className="border-b border-border bg-background">
@@ -364,7 +371,8 @@ export default function MapView() {
           </div>
 
           <div
-            className="relative w-full max-w-2xl mx-auto rounded-xl border border-border overflow-hidden bg-[#0f172a]"
+            className="relative w-full max-w-2xl mx-auto rounded-xl border border-border overflow-hidden"
+            style={{ background: "#ffffff" }}
             onMouseLeave={() => setTooltip(null)}
           >
             <svg
@@ -389,44 +397,52 @@ export default function MapView() {
                     y1="0"
                     x2="0"
                     y2="6"
-                    stroke="#fbbf24"
-                    strokeWidth="1.5"
-                    strokeOpacity="0.45"
+                    stroke="#d97706"
+                    strokeWidth="1"
+                    strokeOpacity="0.35"
                   />
                 </pattern>
               </defs>
 
-              {/* Northern territory overlay drawn FIRST so state boundaries render on top */}
+              {/* Northern territory drawn FIRST — state boundaries render on top */}
               <path
                 d={coordsToPath(NORTHERN_TERRITORY_COORDS)}
-                fill={northernFill}
-                stroke="#fbbf24"
-                strokeWidth={1.2}
-                strokeDasharray="3 2"
-                opacity={0.9}
+                fill={viewMode === "heatmap" ? getHeatmapColor(0) : "#ffffff"}
+                stroke="none"
+                opacity={1}
                 style={{ transition: "fill 0.4s ease" }}
               />
+              {/* Hatch overlay */}
               <path
                 d={coordsToPath(NORTHERN_TERRITORY_COORDS)}
                 fill="url(#hatch-north)"
                 stroke="none"
                 opacity={1}
               />
+              {/* Amber dashed border — always visible */}
+              <path
+                d={coordsToPath(NORTHERN_TERRITORY_COORDS)}
+                fill="none"
+                stroke="#d97706"
+                strokeWidth={1.8}
+                strokeDasharray="5 3"
+                opacity={1}
+              />
 
-              {/* State boundaries rendered on top of northern territory */}
+              {/* State boundaries rendered on top */}
               {geographies.map((geo) => {
                 const stateName = getStateName(geo.properties);
                 const count = stateReportCounts[stateName] ?? 0;
                 const fillColor =
-                  viewMode === "heatmap" ? getHeatmapColor(count) : "#1e3a5f";
+                  viewMode === "heatmap" ? getHeatmapColor(count) : "#ffffff";
                 const d = geometryToPath(geo.geometry);
                 return (
                   <path
                     key={geo.rsmKey}
                     d={d}
                     fill={fillColor}
-                    stroke="#4a9edd"
-                    strokeWidth={0.6}
+                    stroke="#374151"
+                    strokeWidth={0.7}
                     style={{ transition: "fill 0.4s ease" }}
                   />
                 );
@@ -483,7 +499,7 @@ export default function MapView() {
                         textAnchor="middle"
                         style={{
                           fontSize: 8,
-                          fill: "rgba(255,255,255,0.85)",
+                          fill: "rgba(30,30,30,0.85)",
                           fontFamily: "monospace",
                           pointerEvents: "none",
                         }}
@@ -528,6 +544,53 @@ export default function MapView() {
                   </div>
                 );
               })()}
+
+            {/* Map legend footnote */}
+            <div className="absolute bottom-2 right-3 flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <svg width="28" height="10" aria-hidden="true">
+                  <line
+                    x1="0"
+                    y1="5"
+                    x2="28"
+                    y2="5"
+                    stroke="#374151"
+                    strokeWidth="1.2"
+                  />
+                </svg>
+                <span
+                  style={{
+                    fontSize: 9,
+                    color: "#374151",
+                    fontFamily: "sans-serif",
+                  }}
+                >
+                  State Boundary
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <svg width="28" height="10" aria-hidden="true">
+                  <line
+                    x1="0"
+                    y1="5"
+                    x2="28"
+                    y2="5"
+                    stroke="#d97706"
+                    strokeWidth="1.5"
+                    strokeDasharray="4 2"
+                  />
+                </svg>
+                <span
+                  style={{
+                    fontSize: 9,
+                    color: "#374151",
+                    fontFamily: "sans-serif",
+                  }}
+                >
+                  International Boundary
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Heatmap legend */}
@@ -540,11 +603,11 @@ export default function MapView() {
                 <span className="text-xs text-muted-foreground">Low</span>
                 <div className="flex rounded overflow-hidden border border-border">
                   {[
-                    { color: "#1e3a5f", label: "0" },
-                    { color: "#7c3d00", label: "1" },
-                    { color: "#b45309", label: "2" },
-                    { color: "#dc2626", label: "3+" },
-                  ].map(({ color, label }) => (
+                    { color: "#e8f0f7", label: "0", textColor: "#374151" },
+                    { color: "#fde68a", label: "1", textColor: "#374151" },
+                    { color: "#fb923c", label: "2", textColor: "#ffffff" },
+                    { color: "#dc2626", label: "3+", textColor: "#ffffff" },
+                  ].map(({ color, label, textColor }) => (
                     <div
                       key={label}
                       className="flex flex-col items-center justify-end"
@@ -552,7 +615,7 @@ export default function MapView() {
                     >
                       <span
                         className="text-[10px] font-mono mb-0.5"
-                        style={{ color: "rgba(255,255,255,0.85)" }}
+                        style={{ color: textColor }}
                       >
                         {label}
                       </span>
@@ -614,6 +677,11 @@ export default function MapView() {
               </div>
             </>
           )}
+          <p className="mt-4 text-[10px] text-muted-foreground">
+            Map based on Survey of India official position. Boundary of India
+            depicted is as per the political map of India published by Survey of
+            India.
+          </p>
         </div>
       </section>
     </div>

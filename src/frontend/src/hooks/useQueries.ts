@@ -45,7 +45,7 @@ export function useIsCallerAdmin() {
     queryKey: ["isAdmin"],
     queryFn: async () => {
       if (!actor) return false;
-      return actor.isCallerAdmin();
+      return (actor as any).checkCallerIsAdmin() as Promise<boolean>;
     },
     enabled: !!actor && !isFetching,
     retry: false,
