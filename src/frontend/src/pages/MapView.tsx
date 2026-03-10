@@ -11,7 +11,7 @@ const GEO_URL =
 
 const SVG_W = 600;
 const SVG_H = 680;
-// India bounding box including POK and Aksai Chin: lng 66-97.5, lat 6-38.5
+// India bounding box including full claimed territory: lng 66-97.5, lat 6-38.5
 const LNG_MIN = 66;
 const LNG_MAX = 97.5;
 const LAT_MIN = 6;
@@ -47,28 +47,41 @@ function geometryToPath(geometry: {
   return "";
 }
 
-// POK approximate boundary coordinates (lng, lat)
-const POK_COORDS: [number, number][] = [
-  [73.0, 37.0],
-  [74.5, 37.5],
-  [75.5, 37.0],
-  [76.0, 36.0],
-  [74.5, 34.5],
+// Single continuous polygon for India's full claimed northern territory:
+// PoK + Shaksgam Valley + Aksai Chin, merged without any gap.
+// Coordinates trace the outer boundary clockwise (lng, lat).
+const NORTHERN_TERRITORY_COORDS: [number, number][] = [
+  // Western edge of PoK
+  [72.4, 36.2],
+  [72.8, 37.1],
+  [73.5, 37.6],
+  // Northern PoK, heading east into Shaksgam Valley
+  [74.6, 37.8],
+  [75.5, 37.4],
+  [76.3, 37.3],
+  [77.2, 37.1],
+  // Shaksgam / Trans-Karakoram Tract, continuing into Aksai Chin
+  [78.0, 36.8],
+  [79.2, 36.3],
+  [80.0, 36.1],
+  [81.0, 35.6],
+  // Eastern edge of Aksai Chin
+  [80.8, 34.6],
+  [79.8, 34.1],
+  // Southern boundary of Aksai Chin going west
+  [78.7, 34.2],
+  [78.0, 34.6],
+  // Connecting south of Shaksgam to southern PoK
+  [77.0, 34.9],
+  [76.0, 35.2],
+  [75.3, 35.5],
+  // Southern boundary of PoK going west
+  [74.4, 34.5],
   [73.5, 34.0],
-  [73.0, 35.0],
-  [72.5, 36.0],
-  [73.0, 37.0],
-];
-
-// Aksai Chin approximate boundary coordinates (lng, lat)
-const AKSAI_CHIN_COORDS: [number, number][] = [
-  [78.0, 35.5],
-  [79.5, 36.0],
-  [81.0, 35.5],
-  [80.5, 34.5],
-  [79.0, 34.0],
-  [78.0, 34.5],
-  [78.0, 35.5],
+  [73.0, 34.8],
+  [72.4, 35.5],
+  // Close polygon
+  [72.4, 36.2],
 ];
 
 function coordsToPath(coords: [number, number][]): string {
@@ -260,13 +273,7 @@ export default function MapView() {
     }
   }
 
-  // Projected label positions
-  const [pokLabelX, pokLabelY] = project(74.0, 35.5);
-  const [aksaiLabelX, aksaiLabelY] = project(79.5, 35.2);
-
-  // Fill colors for disputed regions based on view mode
-  const pokFill = viewMode === "heatmap" ? getHeatmapColor(0) : "#1e3a5f";
-  const aksaiFill = viewMode === "heatmap" ? getHeatmapColor(0) : "#1e3a5f";
+  const northernFill = viewMode === "heatmap" ? getHeatmapColor(0) : "#1e3a5f";
 
   return (
     <div className="min-h-full">
@@ -365,13 +372,13 @@ export default function MapView() {
               viewBox={`0 0 ${SVG_W} ${SVG_H}`}
               width="100%"
               role="img"
-              aria-label="Political map of India showing full territory including POK and Aksai Chin"
+              aria-label="Political map of India showing full claimed territory"
               style={{ display: "block" }}
             >
-              {/* SVG defs for hatch pattern used on disputed territories */}
+              {/* SVG defs for hatch pattern on northern territory */}
               <defs>
                 <pattern
-                  id="hatch-pok"
+                  id="hatch-north"
                   patternUnits="userSpaceOnUse"
                   width="6"
                   height="6"
@@ -389,7 +396,24 @@ export default function MapView() {
                 </pattern>
               </defs>
 
-              {/* State boundaries */}
+              {/* Northern territory overlay drawn FIRST so state boundaries render on top */}
+              <path
+                d={coordsToPath(NORTHERN_TERRITORY_COORDS)}
+                fill={northernFill}
+                stroke="#fbbf24"
+                strokeWidth={1.2}
+                strokeDasharray="3 2"
+                opacity={0.9}
+                style={{ transition: "fill 0.4s ease" }}
+              />
+              <path
+                d={coordsToPath(NORTHERN_TERRITORY_COORDS)}
+                fill="url(#hatch-north)"
+                stroke="none"
+                opacity={1}
+              />
+
+              {/* State boundaries rendered on top of northern territory */}
               {geographies.map((geo) => {
                 const stateName = getStateName(geo.properties);
                 const count = stateReportCounts[stateName] ?? 0;
@@ -407,70 +431,6 @@ export default function MapView() {
                   />
                 );
               })}
-
-              {/* POK overlay — drawn after state boundaries */}
-              <path
-                d={coordsToPath(POK_COORDS)}
-                fill={pokFill}
-                stroke="#fbbf24"
-                strokeWidth={1.2}
-                strokeDasharray="3 2"
-                opacity={0.9}
-                style={{ transition: "fill 0.4s ease" }}
-              />
-              <path
-                d={coordsToPath(POK_COORDS)}
-                fill="url(#hatch-pok)"
-                stroke="none"
-                opacity={1}
-              />
-              <text
-                x={pokLabelX}
-                y={pokLabelY}
-                textAnchor="middle"
-                style={{
-                  fontSize: 7.5,
-                  fill: "#fbbf24",
-                  fontFamily: "monospace",
-                  fontWeight: "bold",
-                  pointerEvents: "none",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                POK*
-              </text>
-
-              {/* Aksai Chin overlay — drawn after state boundaries */}
-              <path
-                d={coordsToPath(AKSAI_CHIN_COORDS)}
-                fill={aksaiFill}
-                stroke="#fbbf24"
-                strokeWidth={1.2}
-                strokeDasharray="3 2"
-                opacity={0.9}
-                style={{ transition: "fill 0.4s ease" }}
-              />
-              <path
-                d={coordsToPath(AKSAI_CHIN_COORDS)}
-                fill="url(#hatch-pok)"
-                stroke="none"
-                opacity={1}
-              />
-              <text
-                x={aksaiLabelX}
-                y={aksaiLabelY}
-                textAnchor="middle"
-                style={{
-                  fontSize: 6.5,
-                  fill: "#fbbf24",
-                  fontFamily: "monospace",
-                  fontWeight: "bold",
-                  pointerEvents: "none",
-                  letterSpacing: "0.03em",
-                }}
-              >
-                Aksai Chin*
-              </text>
 
               {/* City markers (markers mode only) */}
               {viewMode === "markers" &&
@@ -570,12 +530,6 @@ export default function MapView() {
               })()}
           </div>
 
-          {/* Map footnote */}
-          <p className="mt-3 text-center text-[10px] text-muted-foreground/70 italic max-w-2xl mx-auto">
-            * As per official Survey of India. POK and Aksai Chin are integral
-            parts of India.
-          </p>
-
           {/* Heatmap legend */}
           {viewMode === "heatmap" && (
             <div className="mt-4 flex flex-col items-center gap-2">
@@ -633,30 +587,6 @@ export default function MapView() {
                     {type}
                   </Badge>
                 ))}
-              </div>
-              {/* Disputed territory legend */}
-              <div className="mt-4 flex items-center gap-2">
-                <svg
-                  width="28"
-                  height="16"
-                  role="img"
-                  aria-label="Disputed territory pattern"
-                >
-                  <rect
-                    x="1"
-                    y="1"
-                    width="26"
-                    height="14"
-                    fill="#1e3a5f"
-                    stroke="#fbbf24"
-                    strokeWidth="1.5"
-                    strokeDasharray="3 2"
-                  />
-                </svg>
-                <span className="text-xs text-muted-foreground">
-                  Disputed territory (POK / Aksai Chin) — integral parts of
-                  India
-                </span>
               </div>
             </>
           )}
