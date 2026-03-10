@@ -1,7 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatAmount, relativeTime, useGetReports } from "@/hooks/useQueries";
+import {
+  formatAmount,
+  relativeTime,
+  useGetApprovedReports,
+} from "@/hooks/useQueries";
 import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -11,6 +15,7 @@ import {
   FileText,
   IndianRupee,
   MapPin,
+  User,
 } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -28,56 +33,61 @@ const SAMPLE_REPORTS = [
     id: 1n,
     department: "Municipal Corporation",
     city: "Delhi",
-    corruption_type: "Bribery",
+    corruptionType: "Bribery",
     amount: 25000n,
+    officerName: "J. Sharma",
     description:
       "Building permit officer demanded ₹25,000 cash to expedite commercial property registration. Refused to process paperwork without payment.",
-    created_at: BigInt(Date.now() - 2 * 3600 * 1000) * 1_000_000n,
+    createdAt: BigInt(Date.now() - 2 * 3600 * 1000) * 1_000_000n,
   },
   {
     id: 2n,
     department: "Regional Transport Office",
     city: "Mumbai",
-    corruption_type: "Fraud",
+    corruptionType: "Fraud",
     amount: 8000n,
+    officerName: undefined,
     description:
       "RTO agent collected ₹8,000 claiming it was a government fee for driving license renewal. Official fee is ₹400. No receipt provided.",
-    created_at: BigInt(Date.now() - 5 * 3600 * 1000) * 1_000_000n,
+    createdAt: BigInt(Date.now() - 5 * 3600 * 1000) * 1_000_000n,
   },
   {
     id: 3n,
     department: "Public Works Department",
     city: "Bangalore",
-    corruption_type: "Embezzlement",
+    corruptionType: "Embezzlement",
     amount: 1500000n,
+    officerName: "R. Patel (Contractor)",
     description:
-      "Road repair contract awarded at 3x market rate to relative of senior official. Work substandard with potholes reappearing within 2 weeks of completion.",
-    created_at: BigInt(Date.now() - 1 * 86400 * 1000) * 1_000_000n,
+      "Road repair contract awarded at 3x market rate to relative of senior official. Work substandard with potholes reappearing within 2 weeks.",
+    createdAt: BigInt(Date.now() - 1 * 86400 * 1000) * 1_000_000n,
   },
   {
     id: 4n,
     department: "State Electricity Board",
     city: "Hyderabad",
-    corruption_type: "Extortion",
+    corruptionType: "Extortion",
     amount: 3500n,
+    officerName: undefined,
     description:
-      "Lineman demanded bribe to restore power connection after scheduled maintenance. Threatened 3-day delay in restoration if payment not made.",
-    created_at: BigInt(Date.now() - 2 * 86400 * 1000) * 1_000_000n,
+      "Lineman demanded bribe to restore power connection after scheduled maintenance. Threatened 3-day delay if payment not made.",
+    createdAt: BigInt(Date.now() - 2 * 86400 * 1000) * 1_000_000n,
   },
   {
     id: 5n,
     department: "District Collector Office",
     city: "Chennai",
-    corruption_type: "Nepotism",
+    corruptionType: "Nepotism",
     amount: 0n,
+    officerName: "K. Murugan",
     description:
-      "Junior administrative positions filled exclusively with relatives of senior officer. 47 qualified candidates passed written test but were not called for interview.",
-    created_at: BigInt(Date.now() - 3 * 86400 * 1000) * 1_000_000n,
+      "Junior administrative positions filled exclusively with relatives of senior officer. 47 qualified candidates passed test but were not called for interview.",
+    createdAt: BigInt(Date.now() - 3 * 86400 * 1000) * 1_000_000n,
   },
 ];
 
 export default function Home() {
-  const { data: reports, isLoading } = useGetReports();
+  const { data: reports, isLoading } = useGetApprovedReports();
 
   const displayReports =
     reports && reports.length > 0 ? reports : SAMPLE_REPORTS;
@@ -145,7 +155,9 @@ export default function Home() {
             <p className="text-muted-foreground text-sm mt-1">
               {isLoading
                 ? "Loading..."
-                : `${displayReports.length} report${displayReports.length !== 1 ? "s" : ""} on record`}
+                : `${displayReports.length} report${
+                    displayReports.length !== 1 ? "s" : ""
+                  } on record`}
             </p>
           </div>
         </div>
@@ -205,11 +217,11 @@ export default function Home() {
                     <Badge
                       variant="outline"
                       className={
-                        CORRUPTION_COLORS[report.corruption_type] ??
+                        CORRUPTION_COLORS[report.corruptionType] ??
                         CORRUPTION_COLORS.Other
                       }
                     >
-                      {report.corruption_type}
+                      {report.corruptionType}
                     </Badge>
                     <span className="flex items-center gap-1 text-sm text-muted-foreground">
                       <Building2 className="w-3.5 h-3.5" />
@@ -219,6 +231,12 @@ export default function Home() {
                       <MapPin className="w-3.5 h-3.5" />
                       {report.city}
                     </span>
+                    {report.officerName && (
+                      <span className="flex items-center gap-1 text-sm text-amber-400/80">
+                        <User className="w-3.5 h-3.5" />
+                        {report.officerName}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     {Number(report.amount) > 0 && (
@@ -229,7 +247,7 @@ export default function Home() {
                     )}
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="w-3 h-3" />
-                      {relativeTime(report.created_at)}
+                      {relativeTime(report.createdAt)}
                     </span>
                   </div>
                 </div>

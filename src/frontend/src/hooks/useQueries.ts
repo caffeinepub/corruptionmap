@@ -1,16 +1,82 @@
+import type { ExternalBlob } from "@/backend";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Report } from "../backend.d";
 import { useActor } from "./useActor";
 
-export function useGetReports() {
+export function useGetApprovedReports() {
   const { actor, isFetching } = useActor();
   return useQuery<Report[]>({
-    queryKey: ["reports"],
+    queryKey: ["reports", "approved"],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getReports();
+      return actor.getApprovedReports();
     },
     enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetPendingReports() {
+  const { actor, isFetching } = useActor();
+  return useQuery<Report[]>({
+    queryKey: ["reports", "pending"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getPendingReports();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetAllReports() {
+  const { actor, isFetching } = useActor();
+  return useQuery<Report[]>({
+    queryKey: ["reports", "all"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllReports();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useIsCallerAdmin() {
+  const { actor, isFetching } = useActor();
+  return useQuery<boolean>({
+    queryKey: ["isAdmin"],
+    queryFn: async () => {
+      if (!actor) return false;
+      return actor.isCallerAdmin();
+    },
+    enabled: !!actor && !isFetching,
+    retry: false,
+  });
+}
+
+export function useIsAdminClaimed() {
+  const { actor, isFetching } = useActor();
+  return useQuery<boolean>({
+    queryKey: ["isAdminClaimed"],
+    queryFn: async () => {
+      if (!actor) return false;
+      return (actor as any).isAdminClaimed() as Promise<boolean>;
+    },
+    enabled: !!actor && !isFetching,
+    retry: false,
+  });
+}
+
+export function useClaimAdmin() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error("Actor not available");
+      return (actor as any).claimAdmin() as Promise<boolean>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+      queryClient.invalidateQueries({ queryKey: ["isAdminClaimed"] });
+    },
   });
 }
 
@@ -25,15 +91,47 @@ export function useSubmitReport() {
       corruptionType: string;
       amount: bigint;
       description: string;
+      officerName: string | null;
+      photo: ExternalBlob | null;
     }) => {
       if (!actor) throw new Error("Actor not available");
-      return actor.submitReport(
+      return actor.createReport(
         data.department,
         data.city,
         data.corruptionType,
         data.amount,
         data.description,
+        data.officerName,
+        data.photo,
       );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+    },
+  });
+}
+
+export function useApproveReport() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error("Actor not available");
+      return actor.approveReport(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+    },
+  });
+}
+
+export function useRejectReport() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error("Actor not available");
+      return actor.rejectReport(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reports"] });

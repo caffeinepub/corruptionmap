@@ -10,22 +10,74 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export type ExternalBlob = Uint8Array;
 export interface Report {
   'id' : bigint,
+  'status' : ReportStatus,
   'city' : string,
+  'corruptionType' : string,
+  'createdAt' : bigint,
+  'officerName' : [] | [string],
   'description' : string,
-  'created_at' : bigint,
-  'corruption_type' : string,
+  'photo' : [] | [ExternalBlob],
   'department' : string,
   'amount' : bigint,
 }
+export type ReportStatus = { 'pending' : null } |
+  { 'approved' : null } |
+  { 'rejected' : null };
+export type UserRole = { 'admin' : null } |
+  { 'user' : null } |
+  { 'guest' : null };
+export interface _CaffeineStorageCreateCertificateResult {
+  'method' : string,
+  'blob_hash' : string,
+}
+export interface _CaffeineStorageRefillInformation {
+  'proposed_top_up_amount' : [] | [bigint],
+}
+export interface _CaffeineStorageRefillResult {
+  'success' : [] | [boolean],
+  'topped_up_amount' : [] | [bigint],
+}
 export interface _SERVICE {
-  'getReport' : ActorMethod<[bigint], Report>,
-  'getReports' : ActorMethod<[], Array<Report>>,
-  'submitReport' : ActorMethod<
-    [string, string, string, bigint, string],
+  '_caffeineStorageBlobIsLive' : ActorMethod<[Uint8Array], boolean>,
+  '_caffeineStorageBlobsToDelete' : ActorMethod<[], Array<Uint8Array>>,
+  '_caffeineStorageConfirmBlobDeletion' : ActorMethod<
+    [Array<Uint8Array>],
+    undefined
+  >,
+  '_caffeineStorageCreateCertificate' : ActorMethod<
+    [string],
+    _CaffeineStorageCreateCertificateResult
+  >,
+  '_caffeineStorageRefillCashier' : ActorMethod<
+    [[] | [_CaffeineStorageRefillInformation]],
+    _CaffeineStorageRefillResult
+  >,
+  '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
+  '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'approveReport' : ActorMethod<[bigint], undefined>,
+  'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'createReport' : ActorMethod<
+    [
+      string,
+      string,
+      string,
+      bigint,
+      string,
+      [] | [string],
+      [] | [ExternalBlob],
+    ],
     Report
   >,
+  'getAllReports' : ActorMethod<[], Array<Report>>,
+  'getApprovedReports' : ActorMethod<[], Array<Report>>,
+  'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getPendingReports' : ActorMethod<[], Array<Report>>,
+  'getReport' : ActorMethod<[bigint], [] | [Report]>,
+  'isCallerAdmin' : ActorMethod<[], boolean>,
+  'rejectReport' : ActorMethod<[bigint], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

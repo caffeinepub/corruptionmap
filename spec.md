@@ -1,25 +1,25 @@
 # CorruptionMap
 
 ## Current State
-The Report page submits reports with no identity info attached. The form shows a small note saying reports are anonymous, but there's no explicit anonymous mode or any way for the reporter to reference their submission later.
+The map uses GeoJSON from `geohacker/india` which follows de-facto/international boundaries. This does NOT include Pakistan-Occupied Kashmir (POK) or Aksai Chin as part of India's territory. The SVG projection bounding box is LNG 68–97.5, LAT 6–37.
 
 ## Requested Changes (Diff)
 
 ### Add
-- After successful submission, generate a random anonymous reference token (e.g. ANON-XXXXXXXX) client-side and display it prominently in the success state
-- Instruct users to copy/save the token to reference their report in future
-- Add a visible "Anonymous Mode" shield badge/indicator on the form to reinforce privacy
-- Add a copy-to-clipboard button for the token
+- Custom outer boundary overlay for India's full claimed territory (including POK and Aksai Chin)
+- A POK region indicator/label on the map
 
 ### Modify
-- Success state: expand it to show the anonymous token with copy button instead of just "Report Submitted"
-- Report page header: make the anonymous guarantee more prominent
+- Switch GeoJSON data source to one that represents India's official claimed boundaries (including J&K with POK)
+- Extend the bounding box slightly northwest to ensure POK area is well within visible frame: LNG_MIN=66, LNG_MAX=97.5, LAT_MIN=6, LAT_MAX=38
+- Add a note/label on map indicating India's claimed territory per official Survey of India position
 
 ### Remove
 - Nothing removed
 
 ## Implementation Plan
-1. Add `generateAnonToken()` helper that creates a random ANON-XXXXXXXX string
-2. Store the token in state alongside `submitted`
-3. Update success state UI to display the token prominently with a copy button and save reminder
-4. Add a small anonymous shield indicator/badge on the form card header
+1. Change GEO_URL to `https://raw.githubusercontent.com/codeForBharat/india/main/states.geojson` or use `https://raw.githubusercontent.com/geohacker/india/master/state/india_state.geojson` as fallback
+2. Try alternative GeoJSON sources that include full J&K with POK: use `https://raw.githubusercontent.com/Subhash9325/GeoJson-Data-of-Indian-States/master/Indian_States` which includes the full J&K extent
+3. Adjust SVG projection: LNG_MIN=66, LNG_MAX=97.5, LAT_MIN=6, LAT_MAX=38.5, SVG_H=680
+4. Add a subtle hatched/dashed-border overlay polygon for the POK region (approx coords) to show it as Indian territory under occupation
+5. Add a small text label "(Includes J&K incl. POK as per GoI)" or similar disclaimer on the map
